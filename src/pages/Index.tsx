@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import { FileDropZone } from '@/components/FileDropZone';
 import { TransactionTable } from '@/components/TransactionTable';
-import { parseQFX, transactionsToCSV, type ParseResult } from '@/lib/qfxParser';
+import { parseQFX, transactionsToCSV, type ParseResult, type Transaction } from '@/lib/qfxParser';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, RefreshCw, TrendingUp } from 'lucide-react';
+import { Download, FileText, RefreshCw, TrendingUp, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 const Index = () => {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
@@ -48,6 +49,26 @@ const Index = () => {
     URL.revokeObjectURL(url);
 
     toast.success('CSV downloaded successfully');
+  }, [fileName]);
+
+  const downloadExcel = useCallback((transactions: Transaction[], suffix: string) => {
+    const data = transactions.map(t => ({
+      Date: t.date,
+      Type: t.type,
+      CUSIP: t.cusip || '',
+      Ticker: t.ticker || '',
+      Name: t.name,
+      Units: t.units ? parseFloat(t.units) : '',
+      'Unit Price': t.unitPrice ? parseFloat(t.unitPrice) : '',
+      Amount: t.amount ? parseFloat(t.amount) : ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
+    
+    XLSX.writeFile(workbook, fileName.replace(/\.(qfx|ofx)$/i, '') + suffix + '.xlsx');
+    toast.success('Excel file downloaded successfully');
   }, [fileName]);
 
   const buyTypes = ['BUY', 'BUYMF', 'SELL', 'SELLMF', 'BUYSTOCK', 'SELLSTOCK', 'BUYOPT', 'SELLOPT'];
@@ -123,20 +144,31 @@ const Index = () => {
                 </Button>
               </div>
 
-              {/* Download Buttons */}
               {parseResult.transactions.length > 0 && (
                 <div className="flex flex-wrap gap-3">
                   {tradeTransactions.length > 0 && (
-                    <Button size="sm" variant="outline" onClick={() => downloadCSV(tradeTransactions, '-trades')}>
-                      <Download className="w-4 h-4" />
-                      Download Trades CSV ({tradeTransactions.length})
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => downloadCSV(tradeTransactions, '-trades')}>
+                        <Download className="w-4 h-4" />
+                        Trades CSV ({tradeTransactions.length})
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => downloadExcel(tradeTransactions, '-trades')}>
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Trades Excel
+                      </Button>
+                    </>
                   )}
                   {dividendTransactions.length > 0 && (
-                    <Button size="sm" variant="outline" onClick={() => downloadCSV(dividendTransactions, '-dividends')}>
-                      <Download className="w-4 h-4" />
-                      Download Dividends CSV ({dividendTransactions.length})
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => downloadCSV(dividendTransactions, '-dividends')}>
+                        <Download className="w-4 h-4" />
+                        Dividends CSV ({dividendTransactions.length})
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => downloadExcel(dividendTransactions, '-dividends')}>
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Dividends Excel
+                      </Button>
+                    </>
                   )}
                 </div>
               )}
