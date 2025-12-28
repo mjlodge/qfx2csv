@@ -127,7 +127,7 @@ const Index = () => {
               {parseResult.transactions.length > 0 && (
                 <div className="flex flex-wrap gap-3">
                   {tradeTransactions.length > 0 && (
-                    <Button size="sm" onClick={() => downloadCSV(tradeTransactions, '-trades')}>
+                    <Button size="sm" variant="outline" onClick={() => downloadCSV(tradeTransactions, '-trades')}>
                       <Download className="w-4 h-4" />
                       Download Trades CSV ({tradeTransactions.length})
                     </Button>
