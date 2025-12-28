@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownRight, RefreshCw, DollarSign } from 'lucide-react';
 
@@ -56,6 +57,7 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
               <TableHead className="w-12"></TableHead>
               <TableHead className="font-semibold text-foreground">Date</TableHead>
               <TableHead className="font-semibold text-foreground">Type</TableHead>
+              <TableHead className="font-semibold text-foreground">CUSIP</TableHead>
               <TableHead className="font-semibold text-foreground">Ticker</TableHead>
               <TableHead className="font-semibold text-foreground">Name</TableHead>
               <TableHead className="font-semibold text-foreground text-right">Units</TableHead>
@@ -94,6 +96,20 @@ export function TransactionTable({ transactions }: TransactionTableProps) {
                   >
                     {transaction.action || transaction.type}
                   </span>
+                </TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {transaction.cusip ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help">{transaction.cusip}</span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">CUSIP: {transaction.cusip}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    '—'
+                  )}
                 </TableCell>
                 <TableCell className="font-mono text-sm font-medium text-primary">
                   {transaction.ticker || '—'}
