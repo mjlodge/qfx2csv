@@ -121,9 +121,38 @@ const Index = () => {
                 </div>
               </div>
 
-              {/* Transaction Table */}
+              {/* Transaction Tables */}
               {parseResult.transactions.length > 0 ? (
-                <TransactionTable transactions={parseResult.transactions} />
+                <>
+                  {(() => {
+                    const buyTypes = ['BUY', 'BUYMF', 'SELL', 'SELLMF', 'BUYSTOCK', 'SELLSTOCK', 'BUYOPT', 'SELLOPT'];
+                    const dividendTypes = ['INCOME', 'REINVEST', 'DIV', 'DIVIDEND'];
+                    
+                    const tradeTransactions = parseResult.transactions.filter(t => 
+                      buyTypes.includes(t.type.toUpperCase())
+                    );
+                    const dividendTransactions = parseResult.transactions.filter(t => 
+                      dividendTypes.includes(t.type.toUpperCase())
+                    );
+                    
+                    return (
+                      <div className="space-y-8">
+                        {tradeTransactions.length > 0 && (
+                          <TransactionTable 
+                            transactions={tradeTransactions} 
+                            title={`Buy & Sell Transactions (${tradeTransactions.length})`}
+                          />
+                        )}
+                        {dividendTransactions.length > 0 && (
+                          <TransactionTable 
+                            transactions={dividendTransactions} 
+                            title={`Dividends & Reinvestments (${dividendTransactions.length})`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })()}
+                </>
               ) : (
                 <div className="text-center py-16 glass rounded-xl">
                   <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />

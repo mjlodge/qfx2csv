@@ -13,6 +13,7 @@ import { ArrowUpRight, ArrowDownRight, RefreshCw, DollarSign } from 'lucide-reac
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  title?: string;
 }
 
 function getTransactionIcon(type: string) {
@@ -47,9 +48,14 @@ function formatUnits(units: string | undefined): string {
   return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 }
 
-export function TransactionTable({ transactions }: TransactionTableProps) {
+export function TransactionTable({ transactions, title }: TransactionTableProps) {
   return (
     <div className="w-full overflow-hidden rounded-xl border border-border glass">
+      {title && (
+        <div className="px-4 py-3 border-b border-border">
+          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
