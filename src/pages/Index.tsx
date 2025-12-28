@@ -35,22 +35,30 @@ const Index = () => {
     }, 300);
   }, []);
 
-  const handleDownloadCSV = useCallback(() => {
-    if (!parseResult) return;
-
-    const csv = transactionsToCSV(parseResult.transactions);
+  const downloadCSV = useCallback((transactions: typeof parseResult.transactions, suffix: string) => {
+    const csv = transactionsToCSV(transactions);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = fileName.replace(/\.(qfx|ofx)$/i, '') + '.csv';
+    link.download = fileName.replace(/\.(qfx|ofx)$/i, '') + suffix + '.csv';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
     toast.success('CSV downloaded successfully');
-  }, [parseResult, fileName]);
+  }, [fileName]);
+
+  const buyTypes = ['BUY', 'BUYMF', 'SELL', 'SELLMF', 'BUYSTOCK', 'SELLSTOCK', 'BUYOPT', 'SELLOPT'];
+  const dividendTypes = ['INCOME', 'REINVEST', 'DIV', 'DIVIDEND'];
+
+  const tradeTransactions = parseResult?.transactions.filter(t => 
+    buyTypes.includes(t.type.toUpperCase())
+  ) || [];
+  const dividendTransactions = parseResult?.transactions.filter(t => 
+    dividendTypes.includes(t.type.toUpperCase())
+  ) || [];
 
   const handleReset = useCallback(() => {
     setParseResult(null);
@@ -109,64 +117,50 @@ const Index = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={handleReset}>
-                    <RefreshCw className="w-4 h-4" />
-                    New File
-                  </Button>
-                  <Button size="sm" onClick={handleDownloadCSV}>
-                    <Download className="w-4 h-4" />
-                    Download CSV
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" onClick={handleReset}>
+                  <RefreshCw className="w-4 h-4" />
+                  New File
+                </Button>
               </div>
+
+              {/* Download Buttons */}
+              {parseResult.transactions.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {tradeTransactions.length > 0 && (
+                    <Button size="sm" onClick={() => downloadCSV(tradeTransactions, '-trades')}>
+                      <Download className="w-4 h-4" />
+                      Download Trades CSV ({tradeTransactions.length})
+                    </Button>
+                  )}
+                  {dividendTransactions.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => downloadCSV(dividendTransactions, '-dividends')}>
+                      <Download className="w-4 h-4" />
+                      Download Dividends CSV ({dividendTransactions.length})
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {/* Transaction Tables */}
               {parseResult.transactions.length > 0 ? (
-                <>
-                  {(() => {
-                    const buyTypes = ['BUY', 'BUYMF', 'SELL', 'SELLMF', 'BUYSTOCK', 'SELLSTOCK', 'BUYOPT', 'SELLOPT'];
-                    const dividendTypes = ['INCOME', 'REINVEST', 'DIV', 'DIVIDEND'];
-                    
-                    const tradeTransactions = parseResult.transactions.filter(t => 
-                      buyTypes.includes(t.type.toUpperCase())
-                    );
-                    const dividendTransactions = parseResult.transactions.filter(t => 
-                      dividendTypes.includes(t.type.toUpperCase())
-                    );
-                    
-                    return (
-                      <div className="space-y-8">
-                        {tradeTransactions.length > 0 && (
-                          <TransactionTable 
-                            transactions={tradeTransactions} 
-                            title={`Buy & Sell Transactions (${tradeTransactions.length})`}
-                          />
-                        )}
-                        {dividendTransactions.length > 0 && (
-                          <TransactionTable 
-                            transactions={dividendTransactions} 
-                            title={`Dividends & Reinvestments (${dividendTransactions.length})`}
-                          />
-                        )}
-                      </div>
-                    );
-                  })()}
-                </>
+                <div className="space-y-8">
+                  {tradeTransactions.length > 0 && (
+                    <TransactionTable 
+                      transactions={tradeTransactions} 
+                      title={`Buy & Sell Transactions (${tradeTransactions.length})`}
+                    />
+                  )}
+                  {dividendTransactions.length > 0 && (
+                    <TransactionTable 
+                      transactions={dividendTransactions} 
+                      title={`Dividends & Reinvestments (${dividendTransactions.length})`}
+                    />
+                  )}
+                </div>
               ) : (
                 <div className="text-center py-16 glass rounded-xl">
                   <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No transactions found in file</p>
-                </div>
-              )}
-
-              {/* Bottom Download CTA */}
-              {parseResult.transactions.length > 0 && (
-                <div className="flex justify-center pt-4">
-                  <Button size="lg" variant="glow" onClick={handleDownloadCSV}>
-                    <Download className="w-5 h-5" />
-                    Download CSV File
-                  </Button>
                 </div>
               )}
             </div>
