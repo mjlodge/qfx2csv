@@ -153,7 +153,7 @@ const Index = () => {
                         Trades CSV ({tradeTransactions.length})
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => downloadExcel(tradeTransactions, '-trades')}>
-                        <FileSpreadsheet className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                         Trades Excel
                       </Button>
                     </>
@@ -165,7 +165,7 @@ const Index = () => {
                         Dividends CSV ({dividendTransactions.length})
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => downloadExcel(dividendTransactions, '-dividends')}>
-                        <FileSpreadsheet className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                         Dividends Excel
                       </Button>
                     </>
