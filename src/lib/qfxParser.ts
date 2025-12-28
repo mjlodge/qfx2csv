@@ -10,6 +10,14 @@ export interface Transaction {
   unitPrice?: string;
   total?: string;
   action?: string;
+  cusip?: string;
+}
+
+export interface SecurityInfo {
+  uniqueId: string;
+  uniqueIdType: string;
+  name: string;
+  ticker: string;
 }
 
 export interface ParseResult {
@@ -17,6 +25,7 @@ export interface ParseResult {
   accountType: string;
   brokerName: string;
   transactions: Transaction[];
+  securities: Map<string, SecurityInfo>;
 }
 
 function parseOFXDate(dateStr: string): string {
@@ -57,12 +66,99 @@ function extractBlock(content: string, tag: string): string[] {
   return blocks;
 }
 
+function parseSecurityList(content: string): Map<string, SecurityInfo> {
+  const securities = new Map<string, SecurityInfo>();
+  
+  // Extract SECLIST section
+  const secListMatch = content.match(/<SECLIST>([\s\S]*?)(<\/SECLIST>|$)/i);
+  if (!secListMatch) return securities;
+  
+  const secListContent = secListMatch[1];
+  
+  // Find all security info blocks (STOCKINFO, MFINFO, DEBTINFO, OPTINFO, OTHERINFO)
+  const secInfoBlocks = [
+    ...extractBlock(secListContent, 'STOCKINFO'),
+    ...extractBlock(secListContent, 'MFINFO'),
+    ...extractBlock(secListContent, 'DEBTINFO'),
+    ...extractBlock(secListContent, 'OPTINFO'),
+    ...extractBlock(secListContent, 'OTHERINFO'),
+  ];
+  
+  // Also try to find SECINFO directly (some files structure differently)
+  const secInfoDirect = extractBlock(secListContent, 'SECINFO');
+  
+  const allSecBlocks = [...secInfoBlocks, ...secInfoDirect];
+  
+  // If no structured blocks found, try parsing the raw content
+  if (allSecBlocks.length === 0) {
+    // Try to find SECID blocks and their associated SECNAME
+    const secIdPattern = /<SECID>([\s\S]*?)(?=<SECID>|<\/SECLIST>|$)/gi;
+    let secMatch;
+    while ((secMatch = secIdPattern.exec(secListContent)) !== null) {
+      const block = secMatch[1];
+      const uniqueId = extractTagValue(block, 'UNIQUEID');
+      const uniqueIdType = extractTagValue(block, 'UNIQUEIDTYPE') || 'CUSIP';
+      const name = extractTagValue(block, 'SECNAME');
+      const ticker = extractTagValue(block, 'TICKER');
+      
+      if (uniqueId) {
+        securities.set(uniqueId, {
+          uniqueId,
+          uniqueIdType,
+          name: name || ticker || uniqueId,
+          ticker: ticker || '',
+        });
+      }
+    }
+  }
+  
+  for (const block of allSecBlocks) {
+    const uniqueId = extractTagValue(block, 'UNIQUEID');
+    const uniqueIdType = extractTagValue(block, 'UNIQUEIDTYPE') || 'CUSIP';
+    const name = extractTagValue(block, 'SECNAME');
+    const ticker = extractTagValue(block, 'TICKER');
+    
+    if (uniqueId) {
+      securities.set(uniqueId, {
+        uniqueId,
+        uniqueIdType,
+        name: name || ticker || uniqueId,
+        ticker: ticker || '',
+      });
+    }
+  }
+  
+  return securities;
+}
+
+function getSecurityName(securities: Map<string, SecurityInfo>, uniqueId: string | undefined, fallbackName: string): string {
+  if (!uniqueId) return fallbackName;
+  const security = securities.get(uniqueId);
+  if (security) {
+    return security.name || security.ticker || fallbackName;
+  }
+  return fallbackName || uniqueId;
+}
+
+function getSecurityTicker(securities: Map<string, SecurityInfo>, uniqueId: string | undefined, fallbackTicker: string): string {
+  if (!uniqueId) return fallbackTicker;
+  const security = securities.get(uniqueId);
+  if (security && security.ticker) {
+    return security.ticker;
+  }
+  return fallbackTicker;
+}
+
 export function parseQFX(content: string): ParseResult {
+  // First, parse the security list to build CUSIP -> name mapping
+  const securities = parseSecurityList(content);
+  
   const result: ParseResult = {
     accountId: '',
     accountType: '',
     brokerName: '',
     transactions: [],
+    securities,
   };
 
   // Extract account info
@@ -71,7 +167,6 @@ export function parseQFX(content: string): ParseResult {
   result.accountType = extractTagValue(content, 'ACCTTYPE') || 'INVESTMENT';
 
   // Parse investment transactions (INVSTMTRS)
-  const invTransactions = extractBlock(content, 'INVTRAN');
   const buyStocks = extractBlock(content, 'BUYSTOCK');
   const sellStocks = extractBlock(content, 'SELLSTOCK');
   const buyMFs = extractBlock(content, 'BUYMF');
@@ -82,14 +177,16 @@ export function parseQFX(content: string): ParseResult {
 
   // Process buy transactions
   [...buyStocks, ...buyMFs].forEach((block) => {
+    const cusip = extractTagValue(block, 'UNIQUEID');
     const transaction: Transaction = {
       type: 'BUY',
       date: parseOFXDate(extractTagValue(block, 'DTTRADE') || extractTagValue(block, 'DTPOSTED')),
       amount: extractTagValue(block, 'TOTAL'),
-      name: extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME'),
+      name: getSecurityName(securities, cusip, extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME')),
       memo: extractTagValue(block, 'MEMO'),
       fitid: extractTagValue(block, 'FITID'),
-      ticker: extractTagValue(block, 'TICKER') || extractTagValue(block, 'UNIQUEID'),
+      ticker: getSecurityTicker(securities, cusip, extractTagValue(block, 'TICKER')),
+      cusip,
       units: extractTagValue(block, 'UNITS'),
       unitPrice: extractTagValue(block, 'UNITPRICE'),
       total: extractTagValue(block, 'TOTAL'),
@@ -102,14 +199,16 @@ export function parseQFX(content: string): ParseResult {
 
   // Process sell transactions
   [...sellStocks, ...sellMFs].forEach((block) => {
+    const cusip = extractTagValue(block, 'UNIQUEID');
     const transaction: Transaction = {
       type: 'SELL',
       date: parseOFXDate(extractTagValue(block, 'DTTRADE') || extractTagValue(block, 'DTPOSTED')),
       amount: extractTagValue(block, 'TOTAL'),
-      name: extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME'),
+      name: getSecurityName(securities, cusip, extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME')),
       memo: extractTagValue(block, 'MEMO'),
       fitid: extractTagValue(block, 'FITID'),
-      ticker: extractTagValue(block, 'TICKER') || extractTagValue(block, 'UNIQUEID'),
+      ticker: getSecurityTicker(securities, cusip, extractTagValue(block, 'TICKER')),
+      cusip,
       units: extractTagValue(block, 'UNITS'),
       unitPrice: extractTagValue(block, 'UNITPRICE'),
       total: extractTagValue(block, 'TOTAL'),
@@ -123,14 +222,16 @@ export function parseQFX(content: string): ParseResult {
   // Process income (dividends, interest)
   income.forEach((block) => {
     const incomeType = extractTagValue(block, 'INCOMETYPE');
+    const cusip = extractTagValue(block, 'UNIQUEID');
     const transaction: Transaction = {
       type: 'INCOME',
       date: parseOFXDate(extractTagValue(block, 'DTTRADE') || extractTagValue(block, 'DTPOSTED')),
       amount: extractTagValue(block, 'TOTAL'),
-      name: extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME'),
+      name: getSecurityName(securities, cusip, extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME')),
       memo: extractTagValue(block, 'MEMO') || incomeType,
       fitid: extractTagValue(block, 'FITID'),
-      ticker: extractTagValue(block, 'TICKER') || extractTagValue(block, 'UNIQUEID'),
+      ticker: getSecurityTicker(securities, cusip, extractTagValue(block, 'TICKER')),
+      cusip,
       action: incomeType || 'INCOME',
     };
     if (transaction.date || transaction.fitid) {
@@ -140,14 +241,16 @@ export function parseQFX(content: string): ParseResult {
 
   // Process reinvestments
   reinvests.forEach((block) => {
+    const cusip = extractTagValue(block, 'UNIQUEID');
     const transaction: Transaction = {
       type: 'REINVEST',
       date: parseOFXDate(extractTagValue(block, 'DTTRADE') || extractTagValue(block, 'DTPOSTED')),
       amount: extractTagValue(block, 'TOTAL'),
-      name: extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME'),
+      name: getSecurityName(securities, cusip, extractTagValue(block, 'SECNAME') || extractTagValue(block, 'NAME')),
       memo: extractTagValue(block, 'MEMO'),
       fitid: extractTagValue(block, 'FITID'),
-      ticker: extractTagValue(block, 'TICKER') || extractTagValue(block, 'UNIQUEID'),
+      ticker: getSecurityTicker(securities, cusip, extractTagValue(block, 'TICKER')),
+      cusip,
       units: extractTagValue(block, 'UNITS'),
       unitPrice: extractTagValue(block, 'UNITPRICE'),
       total: extractTagValue(block, 'TOTAL'),
@@ -200,12 +303,13 @@ export function parseQFX(content: string): ParseResult {
 }
 
 export function transactionsToCSV(transactions: Transaction[]): string {
-  const headers = ['Date', 'Type', 'Action', 'Ticker', 'Name', 'Units', 'Unit Price', 'Amount', 'Memo', 'Transaction ID'];
+  const headers = ['Date', 'Type', 'Action', 'CUSIP', 'Ticker', 'Name', 'Units', 'Unit Price', 'Amount', 'Memo', 'Transaction ID'];
   
   const rows = transactions.map((t) => [
     t.date,
     t.type,
     t.action || '',
+    t.cusip || '',
     t.ticker || '',
     `"${(t.name || '').replace(/"/g, '""')}"`,
     t.units || '',
