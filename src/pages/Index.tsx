@@ -3,7 +3,7 @@ import { FileDropZone } from '@/components/FileDropZone';
 import { TransactionTable } from '@/components/TransactionTable';
 import { parseQFX, transactionsToCSV, type ParseResult, type Transaction } from '@/lib/qfxParser';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, RefreshCw, TrendingUp, FileSpreadsheet } from 'lucide-react';
+import { Download, FileText, RefreshCw, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -80,6 +80,21 @@ const Index = () => {
   const dividendTransactions = parseResult?.transactions.filter(t => 
     dividendTypes.includes(t.type.toUpperCase())
   ) || [];
+
+  // Calculate summary statistics
+  const totalBuys = tradeTransactions
+    .filter(t => ['BUY', 'BUYMF', 'BUYSTOCK', 'BUYOPT'].includes(t.type.toUpperCase()))
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
+  
+  const totalSells = tradeTransactions
+    .filter(t => ['SELL', 'SELLMF', 'SELLSTOCK', 'SELLOPT'].includes(t.type.toUpperCase()))
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
+  
+  const totalDividends = dividendTransactions
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
+
+  const formatCurrency = (amount: number) => 
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   const handleReset = useCallback(() => {
     setParseResult(null);
@@ -170,6 +185,50 @@ const Index = () => {
                       </Button>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* Summary Statistics */}
+              {parseResult.transactions.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl glass border border-border/50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-destructive/10">
+                        <ArrowDownRight className="w-4 h-4 text-destructive" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Total Buys</span>
+                    </div>
+                    <p className="text-2xl font-semibold text-foreground">{formatCurrency(totalBuys)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {tradeTransactions.filter(t => ['BUY', 'BUYMF', 'BUYSTOCK', 'BUYOPT'].includes(t.type.toUpperCase())).length} transactions
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 rounded-xl glass border border-border/50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-green-500/10">
+                        <ArrowUpRight className="w-4 h-4 text-green-500" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Total Sells</span>
+                    </div>
+                    <p className="text-2xl font-semibold text-foreground">{formatCurrency(totalSells)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {tradeTransactions.filter(t => ['SELL', 'SELLMF', 'SELLSTOCK', 'SELLOPT'].includes(t.type.toUpperCase())).length} transactions
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 rounded-xl glass border border-border/50">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <DollarSign className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">Dividend Income</span>
+                    </div>
+                    <p className="text-2xl font-semibold text-foreground">{formatCurrency(totalDividends)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {dividendTransactions.length} transactions
+                    </p>
+                  </div>
                 </div>
               )}
 
