@@ -11,12 +11,19 @@ export function FileDropZone({ onFileSelect, isProcessing }: FileDropZoneProps) 
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
   const handleFile = useCallback(
     async (file: File) => {
       setError(null);
 
       if (!file.name.toLowerCase().endsWith('.qfx') && !file.name.toLowerCase().endsWith('.ofx')) {
         setError('Please upload a QFX or OFX file');
+        return;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        setError('File too large. Maximum size is 10MB');
         return;
       }
 
