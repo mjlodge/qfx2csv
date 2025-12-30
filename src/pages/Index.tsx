@@ -1,19 +1,29 @@
-import { useState, useCallback, useMemo } from 'react';
-import { FileDropZone } from '@/components/FileDropZone';
-import { TransactionTable } from '@/components/TransactionTable';
-import { parseQFX, transactionsToCSV, type ParseResult, type Transaction } from '@/lib/qfxParser';
-import { Button } from '@/components/ui/button';
-import { Download, FileText, RefreshCw, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight, CalendarIcon, X } from 'lucide-react';
-import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
-import { format, parseISO, isWithinInterval } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { useState, useCallback, useMemo } from "react";
+import { FileDropZone } from "@/components/FileDropZone";
+import { TransactionTable } from "@/components/TransactionTable";
+import { parseQFX, transactionsToCSV, type ParseResult, type Transaction } from "@/lib/qfxParser";
+import { Button } from "@/components/ui/button";
+import {
+  Download,
+  FileText,
+  RefreshCw,
+  TrendingUp,
+  DollarSign,
+  ArrowUpRight,
+  ArrowDownRight,
+  CalendarIcon,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import * as XLSX from "xlsx";
+import { format, parseISO, isWithinInterval } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
-  const [fileName, setFileName] = useState<string>('');
+  const [fileName, setFileName] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -29,27 +39,27 @@ const Index = () => {
       try {
         const result = parseQFX(content);
         setParseResult(result);
-        
+
         // Set start date to first transaction date
         if (result.transactions.length > 0) {
           const dates = result.transactions
-            .filter(t => t.date)
-            .map(t => parseISO(t.date))
+            .filter((t) => t.date)
+            .map((t) => parseISO(t.date))
             .sort((a, b) => a.getTime() - b.getTime());
-          
+
           if (dates.length > 0) {
             setStartDate(dates[0]);
             setEndDate(dates[dates.length - 1]);
           }
         }
-        
+
         if (result.transactions.length === 0) {
-          toast.warning('No transactions found in file');
+          toast.warning("No transactions found in file");
         } else {
           toast.success(`Parsed ${result.transactions.length} transactions`);
         }
       } catch (error) {
-        toast.error('Failed to parse QFX file');
+        toast.error("Failed to parse QFX file");
         console.error(error);
       } finally {
         setIsProcessing(false);
@@ -57,54 +67,60 @@ const Index = () => {
     }, 300);
   }, []);
 
-  const downloadCSV = useCallback((transactions: typeof parseResult.transactions, suffix: string) => {
-    const csv = transactionsToCSV(transactions);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName.replace(/\.(qfx|ofx)$/i, '') + suffix + '.csv';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const downloadCSV = useCallback(
+    (transactions: typeof parseResult.transactions, suffix: string) => {
+      const csv = transactionsToCSV(transactions);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName.replace(/\.(qfx|ofx)$/i, "") + suffix + ".csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-    toast.success('CSV downloaded successfully');
-  }, [fileName]);
+      toast.success("CSV downloaded successfully");
+    },
+    [fileName],
+  );
 
-  const downloadExcel = useCallback((transactions: Transaction[], suffix: string) => {
-    const data = transactions.map(t => ({
-      Date: t.date,
-      Type: t.type,
-      CUSIP: t.cusip || '',
-      Ticker: t.ticker || '',
-      Name: t.name,
-      Units: t.units ? parseFloat(t.units) : '',
-      'Unit Price': t.unitPrice ? parseFloat(t.unitPrice) : '',
-      Amount: t.amount ? parseFloat(t.amount) : ''
-    }));
+  const downloadExcel = useCallback(
+    (transactions: Transaction[], suffix: string) => {
+      const data = transactions.map((t) => ({
+        Date: t.date,
+        Type: t.type,
+        CUSIP: t.cusip || "",
+        Ticker: t.ticker || "",
+        Name: t.name,
+        Units: t.units ? parseFloat(t.units) : "",
+        "Unit Price": t.unitPrice ? parseFloat(t.unitPrice) : "",
+        Amount: t.amount ? parseFloat(t.amount) : "",
+      }));
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transactions');
-    
-    XLSX.writeFile(workbook, fileName.replace(/\.(qfx|ofx)$/i, '') + suffix + '.xlsx');
-    toast.success('Excel file downloaded successfully');
-  }, [fileName]);
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
 
-  const buyTypes = ['BUY', 'BUYMF', 'SELL', 'SELLMF', 'BUYSTOCK', 'SELLSTOCK', 'BUYOPT', 'SELLOPT'];
-  const dividendTypes = ['INCOME', 'REINVEST', 'DIV', 'DIVIDEND'];
+      XLSX.writeFile(workbook, fileName.replace(/\.(qfx|ofx)$/i, "") + suffix + ".xlsx");
+      toast.success("Excel file downloaded successfully");
+    },
+    [fileName],
+  );
+
+  const buyTypes = ["BUY", "BUYMF", "SELL", "SELLMF", "BUYSTOCK", "SELLSTOCK", "BUYOPT", "SELLOPT"];
+  const dividendTypes = ["INCOME", "REINVEST", "DIV", "DIVIDEND"];
 
   // Filter transactions by date range
   const filteredTransactions = useMemo(() => {
     if (!parseResult?.transactions) return [];
-    
-    return parseResult.transactions.filter(t => {
+
+    return parseResult.transactions.filter((t) => {
       if (!t.date) return true;
-      
+
       try {
         const transactionDate = parseISO(t.date);
-        
+
         if (startDate && endDate) {
           return isWithinInterval(transactionDate, { start: startDate, end: endDate });
         } else if (startDate) {
@@ -119,31 +135,26 @@ const Index = () => {
     });
   }, [parseResult?.transactions, startDate, endDate]);
 
-  const tradeTransactions = filteredTransactions.filter(t => 
-    buyTypes.includes(t.type.toUpperCase())
-  );
-  const dividendTransactions = filteredTransactions.filter(t => 
-    dividendTypes.includes(t.type.toUpperCase())
-  );
+  const tradeTransactions = filteredTransactions.filter((t) => buyTypes.includes(t.type.toUpperCase()));
+  const dividendTransactions = filteredTransactions.filter((t) => dividendTypes.includes(t.type.toUpperCase()));
 
   // Calculate summary statistics
   const totalBuys = tradeTransactions
-    .filter(t => ['BUY', 'BUYMF', 'BUYSTOCK', 'BUYOPT'].includes(t.type.toUpperCase()))
-    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
-  
-  const totalSells = tradeTransactions
-    .filter(t => ['SELL', 'SELLMF', 'SELLSTOCK', 'SELLOPT'].includes(t.type.toUpperCase()))
-    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
-  
-  const totalDividends = dividendTransactions
-    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || '0')), 0);
+    .filter((t) => ["BUY", "BUYMF", "BUYSTOCK", "BUYOPT"].includes(t.type.toUpperCase()))
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || "0")), 0);
 
-  const formatCurrency = (amount: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  const totalSells = tradeTransactions
+    .filter((t) => ["SELL", "SELLMF", "SELLSTOCK", "SELLOPT"].includes(t.type.toUpperCase()))
+    .reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || "0")), 0);
+
+  const totalDividends = dividendTransactions.reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || "0")), 0);
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
 
   const handleReset = useCallback(() => {
     setParseResult(null);
-    setFileName('');
+    setFileName("");
     setStartDate(undefined);
     setEndDate(undefined);
   }, []);
@@ -174,24 +185,16 @@ const Index = () => {
             <span className="text-foreground"> Converter</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Transform your Quicken brokerage transaction files into clean, 
-            spreadsheet-ready CSV format.</p>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Runs entirely in your browser -- your data isn't sent to a server.
-          </p>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Max 10MB file size.
-          </p>
+            Transform your Quicken brokerage transaction files into clean, spreadsheet-ready CSV format
+          </p>{" "}
+          // comment
         </header>
 
         {/* Main Content */}
         <main className="space-y-8">
           {!parseResult ? (
-            <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-              <FileDropZone 
-                onFileSelect={handleFileSelect} 
-                isProcessing={isProcessing} 
-              />
+            <div className="animate-fade-in" style={{ animationDelay: "100ms" }}>
+              <FileDropZone onFileSelect={handleFileSelect} isProcessing={isProcessing} />
             </div>
           ) : (
             <div className="space-y-6 animate-fade-in">
@@ -220,7 +223,7 @@ const Index = () => {
               {parseResult.transactions.length > 0 && (
                 <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl glass border border-border/50">
                   <span className="text-sm font-medium text-foreground">Filter by date:</span>
-                  
+
                   <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -228,7 +231,7 @@ const Index = () => {
                         size="sm"
                         className={cn(
                           "w-[140px] justify-start text-left font-normal",
-                          !startDate && "text-muted-foreground"
+                          !startDate && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -259,7 +262,7 @@ const Index = () => {
                         size="sm"
                         className={cn(
                           "w-[140px] justify-start text-left font-normal",
-                          !endDate && "text-muted-foreground"
+                          !endDate && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -300,25 +303,33 @@ const Index = () => {
                 <div className="flex flex-wrap gap-3">
                   {tradeTransactions.length > 0 && (
                     <>
-                      <Button size="sm" variant="outline" onClick={() => downloadCSV(tradeTransactions, '-trades')}>
+                      <Button size="sm" variant="outline" onClick={() => downloadCSV(tradeTransactions, "-trades")}>
                         <Download className="w-4 h-4" />
-                        Trades CSV ({tradeTransactions.length} transactions)
+                        Trades CSV ({tradeTransactions.length})
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => downloadExcel(tradeTransactions, '-trades')}>
+                      <Button size="sm" variant="outline" onClick={() => downloadExcel(tradeTransactions, "-trades")}>
                         <Download className="w-4 h-4" />
-                        Trades XLSX ({tradeTransactions.length} transactions)
+                        Trades Excel
                       </Button>
                     </>
                   )}
                   {dividendTransactions.length > 0 && (
                     <>
-                      <Button size="sm" variant="outline" onClick={() => downloadCSV(dividendTransactions, '-dividends')}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadCSV(dividendTransactions, "-dividends")}
+                      >
                         <Download className="w-4 h-4" />
-                        Dividends CSV ({dividendTransactions.length} transactions)
+                        Dividends CSV ({dividendTransactions.length})
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => downloadExcel(dividendTransactions, '-dividends')}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadExcel(dividendTransactions, "-dividends")}
+                      >
                         <Download className="w-4 h-4" />
-                        Dividends XLSX ({tradeTransactions.length} transactions)
+                        Dividends Excel
                       </Button>
                     </>
                   )}
@@ -337,10 +348,15 @@ const Index = () => {
                     </div>
                     <p className="text-2xl font-semibold text-foreground">{formatCurrency(totalBuys)}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {tradeTransactions.filter(t => ['BUY', 'BUYMF', 'BUYSTOCK', 'BUYOPT'].includes(t.type.toUpperCase())).length} transactions
+                      {
+                        tradeTransactions.filter((t) =>
+                          ["BUY", "BUYMF", "BUYSTOCK", "BUYOPT"].includes(t.type.toUpperCase()),
+                        ).length
+                      }{" "}
+                      transactions
                     </p>
                   </div>
-                  
+
                   <div className="p-4 rounded-xl glass border border-border/50">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 rounded-lg bg-green-500/10">
@@ -350,10 +366,15 @@ const Index = () => {
                     </div>
                     <p className="text-2xl font-semibold text-foreground">{formatCurrency(totalSells)}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {tradeTransactions.filter(t => ['SELL', 'SELLMF', 'SELLSTOCK', 'SELLOPT'].includes(t.type.toUpperCase())).length} transactions
+                      {
+                        tradeTransactions.filter((t) =>
+                          ["SELL", "SELLMF", "SELLSTOCK", "SELLOPT"].includes(t.type.toUpperCase()),
+                        ).length
+                      }{" "}
+                      transactions
                     </p>
                   </div>
-                  
+
                   <div className="p-4 rounded-xl glass border border-border/50">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 rounded-lg bg-primary/10">
@@ -362,9 +383,7 @@ const Index = () => {
                       <span className="text-sm text-muted-foreground">Dividend Income</span>
                     </div>
                     <p className="text-2xl font-semibold text-foreground">{formatCurrency(totalDividends)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {dividendTransactions.length} transactions
-                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">{dividendTransactions.length} transactions</p>
                   </div>
                 </div>
               )}
@@ -373,14 +392,14 @@ const Index = () => {
               {parseResult.transactions.length > 0 ? (
                 <div className="space-y-8">
                   {tradeTransactions.length > 0 && (
-                    <TransactionTable 
-                      transactions={tradeTransactions} 
+                    <TransactionTable
+                      transactions={tradeTransactions}
                       title={`Buy & Sell Transactions (${tradeTransactions.length})`}
                     />
                   )}
                   {dividendTransactions.length > 0 && (
-                    <TransactionTable 
-                      transactions={dividendTransactions} 
+                    <TransactionTable
+                      transactions={dividendTransactions}
                       title={`Dividends & Reinvestments (${dividendTransactions.length})`}
                     />
                   )}
@@ -396,10 +415,8 @@ const Index = () => {
         </main>
 
         {/* Footer */}
-        <footer className="mt-16 text-center animate-fade-in" style={{ animationDelay: '200ms' }}>
-          <p className="text-sm text-muted-foreground">
-            Supports QFX and OFX files from major brokerages
-          </p>
+        <footer className="mt-16 text-center animate-fade-in" style={{ animationDelay: "200ms" }}>
+          <p className="text-sm text-muted-foreground">Supports QFX and OFX files from major brokerages</p>
         </footer>
       </div>
     </div>
