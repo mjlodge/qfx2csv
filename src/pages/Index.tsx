@@ -28,6 +28,18 @@ const Index = () => {
         const result = parseQFX(content);
         setParseResult(result);
         
+        // Set start date to first transaction date
+        if (result.transactions.length > 0) {
+          const dates = result.transactions
+            .filter(t => t.date)
+            .map(t => parseISO(t.date))
+            .sort((a, b) => a.getTime() - b.getTime());
+          
+          if (dates.length > 0) {
+            setStartDate(dates[0]);
+          }
+        }
+        
         if (result.transactions.length === 0) {
           toast.warning('No transactions found in file');
         } else {
