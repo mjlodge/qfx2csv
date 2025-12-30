@@ -233,7 +233,6 @@ const Index = () => {
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
-                        defaultMonth={startDate}
                         initialFocus
                         className="p-3 pointer-events-auto"
                       />
@@ -261,7 +260,6 @@ const Index = () => {
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
-                        defaultMonth={endDate}
                         initialFocus
                         className="p-3 pointer-events-auto"
                       />
