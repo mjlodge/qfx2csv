@@ -185,9 +185,9 @@ const Index = () => {
             <span className="text-foreground"> Converter</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Transform your Quicken brokerage transaction files into clean, spreadsheet-ready CSV format
-          </p>{" "}
-          // comment
+            Transform your Quicken brokerage transaction files into clean CSV and XLSX file format.
+            <br>Breaks out stock transactions from dividends. Runs in your browser -- no data is sent to a server. </br>
+          </p>
         </header>
 
         {/* Main Content */}
