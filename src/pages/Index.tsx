@@ -37,6 +37,7 @@ const Index = () => {
           
           if (dates.length > 0) {
             setStartDate(dates[0]);
+            setEndDate(dates[dates.length - 1]);
           }
         }
         
