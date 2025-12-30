@@ -1,16 +1,22 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { FileDropZone } from '@/components/FileDropZone';
 import { TransactionTable } from '@/components/TransactionTable';
 import { parseQFX, transactionsToCSV, type ParseResult, type Transaction } from '@/lib/qfxParser';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, RefreshCw, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Download, FileText, RefreshCw, TrendingUp, DollarSign, ArrowUpRight, ArrowDownRight, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { format, parseISO, isWithinInterval } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 const Index = () => {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const handleFileSelect = useCallback((content: string, name: string) => {
     setIsProcessing(true);
@@ -74,12 +80,36 @@ const Index = () => {
   const buyTypes = ['BUY', 'BUYMF', 'SELL', 'SELLMF', 'BUYSTOCK', 'SELLSTOCK', 'BUYOPT', 'SELLOPT'];
   const dividendTypes = ['INCOME', 'REINVEST', 'DIV', 'DIVIDEND'];
 
-  const tradeTransactions = parseResult?.transactions.filter(t => 
+  // Filter transactions by date range
+  const filteredTransactions = useMemo(() => {
+    if (!parseResult?.transactions) return [];
+    
+    return parseResult.transactions.filter(t => {
+      if (!t.date) return true;
+      
+      try {
+        const transactionDate = parseISO(t.date);
+        
+        if (startDate && endDate) {
+          return isWithinInterval(transactionDate, { start: startDate, end: endDate });
+        } else if (startDate) {
+          return transactionDate >= startDate;
+        } else if (endDate) {
+          return transactionDate <= endDate;
+        }
+        return true;
+      } catch {
+        return true;
+      }
+    });
+  }, [parseResult?.transactions, startDate, endDate]);
+
+  const tradeTransactions = filteredTransactions.filter(t => 
     buyTypes.includes(t.type.toUpperCase())
-  ) || [];
-  const dividendTransactions = parseResult?.transactions.filter(t => 
+  );
+  const dividendTransactions = filteredTransactions.filter(t => 
     dividendTypes.includes(t.type.toUpperCase())
-  ) || [];
+  );
 
   // Calculate summary statistics
   const totalBuys = tradeTransactions
@@ -99,6 +129,13 @@ const Index = () => {
   const handleReset = useCallback(() => {
     setParseResult(null);
     setFileName('');
+    setStartDate(undefined);
+    setEndDate(undefined);
+  }, []);
+
+  const clearDateFilter = useCallback(() => {
+    setStartDate(undefined);
+    setEndDate(undefined);
   }, []);
 
   return (
@@ -158,6 +195,78 @@ const Index = () => {
                   New File
                 </Button>
               </div>
+
+              {/* Date Range Filter */}
+              {parseResult.transactions.length > 0 && (
+                <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl glass border border-border/50">
+                  <span className="text-sm font-medium text-foreground">Filter by date:</span>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <span className="text-muted-foreground">to</span>
+
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  {(startDate || endDate) && (
+                    <Button variant="ghost" size="sm" onClick={clearDateFilter}>
+                      <X className="w-4 h-4 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+
+                  {(startDate || endDate) && (
+                    <span className="text-sm text-muted-foreground ml-auto">
+                      Showing {filteredTransactions.length} of {parseResult.transactions.length} transactions
+                    </span>
+                  )}
+                </div>
+              )}
 
               {parseResult.transactions.length > 0 && (
                 <div className="flex flex-wrap gap-3">
