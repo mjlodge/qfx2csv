@@ -297,11 +297,11 @@ const Index = () => {
                     <>
                       <Button size="sm" variant="outline" onClick={() => downloadCSV(tradeTransactions, '-trades')}>
                         <Download className="w-4 h-4" />
-                        Trades CSV ({tradeTransactions.length})
+                        Trades CSV ({tradeTransactions.length} transactions)
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => downloadExcel(tradeTransactions, '-trades')}>
                         <Download className="w-4 h-4" />
-                        Trades Excel
+                        Trades XLSX ({tradeTransactions.length} transactions)
                       </Button>
                     </>
                   )}
@@ -309,11 +309,11 @@ const Index = () => {
                     <>
                       <Button size="sm" variant="outline" onClick={() => downloadCSV(dividendTransactions, '-dividends')}>
                         <Download className="w-4 h-4" />
-                        Dividends CSV ({dividendTransactions.length})
+                        Dividends CSV ({dividendTransactions.length} transactions)
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => downloadExcel(dividendTransactions, '-dividends')}>
                         <Download className="w-4 h-4" />
-                        Dividends Excel
+                        Dividends XLSX ({tradeTransactions.length} transactions)
                       </Button>
                     </>
                   )}
