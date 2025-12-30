@@ -175,7 +175,12 @@ const Index = () => {
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Transform your Quicken brokerage transaction files into clean, 
-            spreadsheet-ready CSV format
+            spreadsheet-ready CSV format.</p>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            Runs entirely in your browser -- your data isn't sent to a server.
+          </p>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            Max 10MB file size.
           </p>
         </header>
 
