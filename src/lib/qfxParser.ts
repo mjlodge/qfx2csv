@@ -149,7 +149,14 @@ function getSecurityTicker(securities: Map<string, SecurityInfo>, uniqueId: stri
   return fallbackTicker;
 }
 
+const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10MB
+
 export function parseQFX(content: string): ParseResult {
+  // Validate content length to prevent ReDoS attacks
+  if (content.length > MAX_CONTENT_LENGTH) {
+    throw new Error('File content too large. Maximum size is 10MB');
+  }
+
   // First, parse the security list to build CUSIP -> name mapping
   const securities = parseSecurityList(content);
   
