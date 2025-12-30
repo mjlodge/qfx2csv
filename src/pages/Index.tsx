@@ -17,6 +17,8 @@ const Index = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const handleFileSelect = useCallback((content: string, name: string) => {
     setIsProcessing(true);
@@ -214,7 +216,7 @@ const Index = () => {
                 <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl glass border border-border/50">
                   <span className="text-sm font-medium text-foreground">Filter by date:</span>
                   
-                  <Popover>
+                  <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -232,7 +234,10 @@ const Index = () => {
                       <Calendar
                         mode="single"
                         selected={startDate}
-                        onSelect={setStartDate}
+                        onSelect={(date) => {
+                          setStartDate(date);
+                          setStartDateOpen(false);
+                        }}
                         defaultMonth={startDate}
                         initialFocus
                         className="p-3 pointer-events-auto"
@@ -242,7 +247,7 @@ const Index = () => {
 
                   <span className="text-muted-foreground">to</span>
 
-                  <Popover>
+                  <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -260,7 +265,10 @@ const Index = () => {
                       <Calendar
                         mode="single"
                         selected={endDate}
-                        onSelect={setEndDate}
+                        onSelect={(date) => {
+                          setEndDate(date);
+                          setEndDateOpen(false);
+                        }}
                         defaultMonth={endDate}
                         initialFocus
                         className="p-3 pointer-events-auto"
