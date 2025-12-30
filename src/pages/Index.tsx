@@ -185,8 +185,9 @@ const Index = () => {
             <span className="text-foreground"> Converter</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Transform your Quicken brokerage transaction files into clean CSV or XLSX files.
-          </p>
+            Transform your Quicken brokerage transaction files into clean, spreadsheet-ready CSV format
+          </p>{" "}
+          // comment
         </header>
 
         {/* Main Content */}
@@ -415,7 +416,9 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="mt-16 text-center animate-fade-in" style={{ animationDelay: "200ms" }}>
-          <p className="text-sm text-muted-foreground">Supports QFX and OFX files from major brokerages</p>
+          <p className="text-sm text-muted-foreground">
+            Supports QFX and OFX files from major brokerages up to 10MB size
+          </p>
         </footer>
       </div>
     </div>
