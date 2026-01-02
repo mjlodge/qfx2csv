@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -86,23 +86,48 @@ const Index = () => {
   );
 
   const downloadExcel = useCallback(
-    (transactions: Transaction[], suffix: string) => {
-      const data = transactions.map((t) => ({
-        Date: t.date,
-        Type: t.type,
-        CUSIP: t.cusip || "",
-        Ticker: t.ticker || "",
-        Name: t.name,
-        Units: t.units ? parseFloat(t.units) : "",
-        "Unit Price": t.unitPrice ? parseFloat(t.unitPrice) : "",
-        Amount: t.amount ? parseFloat(t.amount) : "",
-      }));
+    async (transactions: Transaction[], suffix: string) => {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Transactions");
 
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+      // Add headers
+      worksheet.columns = [
+        { header: "Date", key: "date", width: 12 },
+        { header: "Type", key: "type", width: 10 },
+        { header: "CUSIP", key: "cusip", width: 12 },
+        { header: "Ticker", key: "ticker", width: 10 },
+        { header: "Name", key: "name", width: 30 },
+        { header: "Units", key: "units", width: 12 },
+        { header: "Unit Price", key: "unitPrice", width: 12 },
+        { header: "Amount", key: "amount", width: 12 },
+      ];
 
-      XLSX.writeFile(workbook, fileName.replace(/\.(qfx|ofx)$/i, "") + suffix + ".xlsx");
+      // Add data rows
+      transactions.forEach((t) => {
+        worksheet.addRow({
+          date: t.date,
+          type: t.type,
+          cusip: t.cusip || "",
+          ticker: t.ticker || "",
+          name: t.name,
+          units: t.units ? parseFloat(t.units) : "",
+          unitPrice: t.unitPrice ? parseFloat(t.unitPrice) : "",
+          amount: t.amount ? parseFloat(t.amount) : "",
+        });
+      });
+
+      // Generate buffer and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName.replace(/\.(qfx|ofx)$/i, "") + suffix + ".xlsx";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
       toast.success("Excel file downloaded successfully");
     },
     [fileName],
