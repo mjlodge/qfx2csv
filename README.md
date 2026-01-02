@@ -44,3 +44,11 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+
+# License
+
+This app is licensed under the Mozilla Public License (MPL) 2.0. The main points are that it's open source and anyone can use it, but you have to publish any modifications you make.
+
+# Contributions
+
+Feel free to submit a PR if you want to make a change.
