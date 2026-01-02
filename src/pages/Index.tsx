@@ -185,7 +185,8 @@ const Index = () => {
             <span className="text-foreground"> Converter</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Transform your Quicken brokerage transaction files into clean, spreadsheet-ready CSV format
+            Transform your Quicken brokerage transaction files into CSV and/or Excel files. Produces seperate files for
+            stock transactions and dividends, with date filtering.
           </p>
         </header>
 
