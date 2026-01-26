@@ -442,7 +442,11 @@ const Index = () => {
         {/* Footer */}
         <footer className="mt-16 text-center animate-fade-in" style={{ animationDelay: "200ms" }}>
           <p className="text-sm text-muted-foreground">
-            Supports QFX and OFX files from major brokerages up to 10MB size
+            Supports QFX and OFX files from major brokerages up to 10MB size.
+          </p>
+          <p>
+            This free service is provided "AS IS" with no warranty or guarantees. The code is free and open source and
+            available on GitHub
           </p>
         </footer>
       </div>
