@@ -206,12 +206,12 @@ const Index = () => {
             </div>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="gradient-text">QFX to CSV</span>
+            <span className="gradient-text">QFX to CSV &amp; Excel</span>
             <span className="text-foreground"> Converter</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Transform your Quicken brokerage transaction files into CSV and/or Excel files. Produces seperate files for
-            stock transactions and dividends, with date filtering.
+            Convert your Quicken QFX or OFX brokerage files to CSV or Excel online — free and private, right in your
+            browser. Produces separate files for stock trades and dividends, with date filtering.
           </p>
         </header>
 
@@ -441,8 +441,9 @@ const Index = () => {
 
         {/* Footer */}
         <footer className="mt-16 text-center animate-fade-in" style={{ animationDelay: "200ms" }}>
-          <p className="text-sm text-muted-foreground">
-            Supports QFX and OFX files from major brokerages up to 10MB size.
+          <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
+            A free online QFX to CSV and QFX to Excel converter for Quicken brokerage statements. Also works as an OFX
+            to CSV converter for bank statement files. Supports files from major brokerages up to 10MB.
           </p>
           <p className="text-sm text-muted-foreground">
             <br></br>This free service is provided "AS IS" with no warranty or guarantees. The code is free and open
