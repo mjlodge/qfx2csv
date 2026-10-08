@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import ExcelJS from "exceljs";
+import writeExcelFile, { type Column } from "write-excel-file/browser";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -87,38 +87,26 @@ const Index = () => {
 
   const downloadExcel = useCallback(
     async (transactions: Transaction[], suffix: string) => {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Transactions");
+      const headerCell = (text: string) => ({ value: text, fontWeight: "bold" as const });
+      const numberCell = (value?: string) => {
+        const parsed = value ? parseFloat(value) : NaN;
+        return Number.isFinite(parsed)
+          ? { value: parsed, type: Number, format: "#,##0.00" }
+          : { value: "" };
+      };
 
-      // Add headers
-      worksheet.columns = [
-        { header: "Date", key: "date", width: 12 },
-        { header: "Type", key: "type", width: 10 },
-        { header: "CUSIP", key: "cusip", width: 12 },
-        { header: "Ticker", key: "ticker", width: 10 },
-        { header: "Name", key: "name", width: 30 },
-        { header: "Units", key: "units", width: 12 },
-        { header: "Unit Price", key: "unitPrice", width: 12 },
-        { header: "Amount", key: "amount", width: 12 },
+      const columns: Column<Transaction>[] = [
+        { header: headerCell("Date"), cell: (t) => ({ value: t.date }), width: 12 },
+        { header: headerCell("Type"), cell: (t) => ({ value: t.type }), width: 10 },
+        { header: headerCell("CUSIP"), cell: (t) => ({ value: t.cusip || "" }), width: 12 },
+        { header: headerCell("Ticker"), cell: (t) => ({ value: t.ticker || "" }), width: 10 },
+        { header: headerCell("Name"), cell: (t) => ({ value: t.name }), width: 30 },
+        { header: headerCell("Units"), cell: (t) => numberCell(t.units), width: 12 },
+        { header: headerCell("Unit Price"), cell: (t) => numberCell(t.unitPrice), width: 12 },
+        { header: headerCell("Amount"), cell: (t) => numberCell(t.amount), width: 12 },
       ];
 
-      // Add data rows
-      transactions.forEach((t) => {
-        worksheet.addRow({
-          date: t.date,
-          type: t.type,
-          cusip: t.cusip || "",
-          ticker: t.ticker || "",
-          name: t.name,
-          units: t.units ? parseFloat(t.units) : "",
-          unitPrice: t.unitPrice ? parseFloat(t.unitPrice) : "",
-          amount: t.amount ? parseFloat(t.amount) : "",
-        });
-      });
-
-      // Generate buffer and download
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const blob = await writeExcelFile(transactions, { columns }).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
