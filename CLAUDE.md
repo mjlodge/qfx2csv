@@ -19,7 +19,7 @@ The entire application surface is two files:
 
 - **`src/lib/qfxParser.ts`** — the core logic, framework-agnostic. `parseQFX(content)` turns raw QFX/OFX text into a `ParseResult`, and `transactionsToCSV(transactions)` serializes to CSV. The parser is **regex-based, not a real XML/SGML parser**: OFX files frequently omit closing tags, so `extractTagValue` matches `<TAG>value` (stops at the next `<` or newline) and `extractBlock` falls back to open-ended block matching when no closing tag is present. There is a 10MB input cap (`MAX_CONTENT_LENGTH`) guarding against ReDoS.
 
-- **`src/pages/Index.tsx`** — the whole UI and all interaction state. Handles file selection, date-range filtering, summary stats, and XLSX export (via `exceljs`, built inline here rather than in the parser). CSV download is plain `Blob` + object URL.
+- **`src/pages/Index.tsx`** — the whole UI and all interaction state. Handles file selection, date-range filtering, summary stats, and XLSX export (via `write-excel-file`, built inline here rather than in the parser). CSV download is plain `Blob` + object URL.
 
 `src/App.tsx` wires up routing (only `/` and a `*` NotFound), React Query, and toasters, but the app has just one real page.
 
