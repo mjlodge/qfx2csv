@@ -443,11 +443,12 @@ const Index = () => {
         <footer className="mt-16 text-center animate-fade-in" style={{ animationDelay: "200ms" }}>
           <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
             A free online QFX to CSV and QFX to Excel converter for Quicken brokerage statements. Also works as an OFX
-            to CSV converter for bank statement files. Supports files from major brokerages up to 10MB.
+            to CSV converter for bank statement files.
+            <br /><br />Supports files from major brokerages up to 10MB. Your data is never sent to the cloud.
           </p>
           <p className="text-sm text-muted-foreground">
-            <br></br>This free service is provided "AS IS" with no warranty or guarantees. The code is free and open
-            source and available on GitHub
+            <br></br>This free website is provided "AS IS" with no warranty or guarantees. The code is free and open
+            source and available on GitHub.
           </p>
         </footer>
       </div>
