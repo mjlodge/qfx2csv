@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import ExcelJS from "exceljs";
+import writeExcelFile from "write-excel-file/browser";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
